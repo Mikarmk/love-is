@@ -4,13 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Статистика чувств</title>
-    <link href="https://fonts.googleapis.com/css2?family=Neucha&display=swap" rel="stylesheet">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Relief&display=swap" rel="stylesheet">
     
     <style>
         body {
             margin: 0;
-            /* Обновляем шрифт здесь */
-            font-family: 'Neucha', cursive; 
+            font-family: 'Comic Relief', cursive;
             background-color: #fff0f3;
             display: flex;
             justify-content: center;
@@ -28,13 +30,6 @@
             text-align: center;
         }
 
-        /* ... остальные стили оставляем без изменений ... */
-        /* Но убедись, что везде в кнопках и инпутах стоит font-family: inherit; */
-        
-        .btn, input, .word-btn {
-            font-family: inherit;
-        }
-
         .screen { display: none; }
         .screen.active { display: block; }
 
@@ -47,8 +42,12 @@
             cursor: pointer;
             width: 100%;
             margin-top: 15px;
-            font-size: 1.2rem;
+            font-family: inherit;
+            font-size: 1.1rem;
+            transition: 0.2s;
         }
+
+        .btn:active { transform: scale(0.98); }
 
         .word-grid {
             display: grid;
@@ -63,11 +62,24 @@
             border-radius: 12px;
             background: none;
             cursor: pointer;
+            font-family: inherit;
             color: #ff4d6d;
-            font-size: 1.1rem;
+            font-size: 1rem;
         }
 
         .word-btn.selected { background: #ff4d6d; color: white; }
+
+        .instruction-box {
+            background: #f9f9f9;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: left;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            color: #666;
+            margin-bottom: 15px;
+            border: 1px dashed #ccc;
+        }
 
         input {
             width: 100%;
@@ -75,8 +87,9 @@
             padding: 12px;
             border: 2px solid #eee;
             border-radius: 10px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             text-align: center;
+            font-family: inherit;
             margin-bottom: 10px;
         }
 
@@ -105,8 +118,8 @@
 <div class="container">
     <div id="screen-1" class="screen active">
         <h2 style="font-weight: normal;">Привет! ❤️</h2>
-        <p>Давай узнаем, сколько любви в ваших сообщениях.</p>
-        <button class="btn" onclick="nextScreen(2)">Начать</button>
+        <p>Узнай, сколько раз вы признавались в чувствах.</p>
+        <button class="btn" onclick="nextScreen(2)">Создать открытку</button>
     </div>
 
     <div id="screen-2" class="screen">
@@ -118,29 +131,31 @@
             <button class="word-btn" onclick="selectPreset('обожаю', this)">обожаю</button>
         </div>
         <p>Или введи своё:</p>
-        <input type="text" id="custom-word-input" placeholder="Например: солнышко" oninput="checkCustomInput()">
+        <input type="text" id="custom-word-input" placeholder="Твое слово..." oninput="checkCustomInput()">
         <button class="btn" id="btn-next" style="display:none;" onclick="nextScreen(3)">Далее</button>
     </div>
 
     <div id="screen-3" class="screen">
-        <p style="margin-top:0">Как найти число?</p>
-        <p style="font-size: 0.9rem; color: #666; text-align: left; background: #f9f9f9; padding: 10px; border-radius: 10px;">
-            1. В Телеге нажми на 🔍<br>
-            2. Введи слово <span id="target-word" style="color:#ff4d6d"></span><br>
-            3. Спиши число совпадений сверху
-        </p>
-        <input type="number" id="word-count" placeholder="Введите число">
-        <button class="btn" onclick="generate()">Создать открытку ✨</button>
+        <p style="margin-top:0">Мини-инструкция:</p>
+        <div class="instruction-box">
+            1. Открой чат в Телеге.<br>
+            2. Нажми на 🔍 (Поиск).<br>
+            3. Введи слово <span id="target-word" style="color:#ff4d6d"></span>.<br>
+            4. Спиши количество совпадений.
+        </div>
+        <p>Введи число:</p>
+        <input type="number" id="word-count" placeholder="Напр: 100">
+        <button class="btn" onclick="generate()">Сделать открытку ✨</button>
     </div>
 
     <div id="screen-4" class="screen">
         <div id="loader"></div>
-        <p>Считаем флюиды...</p>
+        <p>Рисуем магию...</p>
     </div>
 
     <div id="screen-5" class="screen">
         <canvas id="resultCanvas"></canvas>
-        <button class="btn" onclick="download()">💾 Сохранить изображение</button>
+        <button class="btn" onclick="download()">💾 Скачать (800x800)</button>
         <button class="btn" style="background:#ccc" onclick="location.reload()">Заново</button>
     </div>
 </div>
@@ -178,8 +193,8 @@
         if (!document.getElementById('word-count').value) return alert("Введите число!");
         nextScreen(4);
         
-        // Маленький хак: ждем 100мс, чтобы шрифт точно подгрузился перед рисованием
-        document.fonts.load('10pt "Neucha"').then(() => {
+        // Ждем загрузки шрифта, чтобы Canvas отрисовал его правильно
+        document.fonts.load('10pt "Comic Relief"').then(() => {
             setTimeout(draw, 1500);
         });
     }
@@ -196,25 +211,27 @@
             canvas.height = 800;
             ctx.drawImage(img, 0, 0, 800, 800);
 
+            // Плашка под текст
             ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
             ctx.fillRect(0, 660, 800, 140);
 
-            // Настройки текста для Canvas
+            // Настройка текста
             ctx.textAlign = "center";
-            ctx.font = "36px 'Neucha'"; // Используем Neucha здесь
+            ctx.font = "30px 'Comic Relief'";
             
             ctx.fillStyle = "#333";
             ctx.fillText("... когда за все время вы сказали друг другу", 400, 715);
 
+            // Выделенное цветом слово и число
             ctx.fillStyle = "#ff4d6d";
-            ctx.font = "42px 'Neucha'"; // Чуть крупнее для акцента
+            ctx.font = "36px 'Comic Relief'"; 
             ctx.fillText(`${finalWord} ${count} раз`, 400, 765);
 
             canvas.style.display = "block";
             nextScreen(5);
         };
         img.onerror = () => {
-            alert("Файл src/image.png не найден. Проверь папку проекта!");
+            alert("Картинка src/image.png не найдена!");
             nextScreen(3);
         };
     }
@@ -222,7 +239,7 @@
     function download() {
         const canvas = document.getElementById('resultCanvas');
         const link = document.createElement('a');
-        link.download = `love-stat.png`;
+        link.download = `love-card.png`;
         link.href = canvas.toDataURL();
         link.click();
     }
