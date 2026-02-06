@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статистика чувств</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: "Comic Sans MS", "Comic Sans", cursive;
+            background-color: #fff0f3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 450px;
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        .btn {
+            background: #ff4d6d;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 30px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        .word-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .word-btn {
+            padding: 12px;
+            border: 2px solid #ff4d6d;
+            border-radius: 12px;
+            background: none;
+            cursor: pointer;
+            font-family: inherit;
+            color: #ff4d6d;
+        }
+
+        .word-btn.selected { background: #ff4d6d; color: white; }
+
+        .instruction-box {
+            background: #f9f9f9;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: left;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            color: #666;
+            margin-bottom: 15px;
+            border: 1px dashed #ccc;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            text-align: center;
+            font-family: inherit;
+            margin-bottom: 10px;
+        }
+
+        #resultCanvas {
+            width: 100%;
+            border-radius: 10px;
+            display: none;
+            margin-top: 10px;
+        }
+
+        #loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #ff4d6d;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="screen-1" class="screen active">
+        <h2 style="font-weight: normal;">Привет! ❤️</h2>
+        <p>Давай узнаем, сколько любви в ваших сообщениях.</p>
+        <button class="btn" onclick="nextScreen(2)">Начать</button>
+    </div>
+
+    <div id="screen-2" class="screen">
+        <p>Какое слово посчитаем?</p>
+        <div class="word-grid">
+            <button class="word-btn" onclick="selectPreset('люблю', this)">люблю</button>
+            <button class="word-btn" onclick="selectPreset('ценю', this)">ценю</button>
+            <button class="word-btn" onclick="selectPreset('скучаю', this)">скучаю</button>
+            <button class="word-btn" onclick="selectPreset('обожаю', this)">обожаю</button>
+        </div>
+        <p>Или введи своё:</p>
+        <input type="text" id="custom-word-input" placeholder="Например: солнышко" oninput="checkCustomInput()">
+        <button class="btn" id="btn-next" style="display:none;" onclick="nextScreen(3)">Далее</button>
+    </div>
+
+    <div id="screen-3" class="screen">
+        <p style="margin-top:0">Как найти число?</p>
+        <div class="instruction-box">
+            1. Открой чат в <b>Telegram</b>.<br>
+            2. Нажми на 🔍 (Поиск).<br>
+            3. Введи слово <span id="target-word" style="color:#ff4d6d"></span>.<br>
+            4. Сверху появится количество совпадений.
+        </div>
+        <p>Введи полученное число:</p>
+        <input type="number" id="word-count" placeholder="Например: 542">
+        <button class="btn" onclick="generate()">Создать открытку ✨</button>
+    </div>
+
+    <div id="screen-4" class="screen">
+        <div id="loader"></div>
+        <p>Считаем флюиды...</p>
+    </div>
+
+    <div id="screen-5" class="screen">
+        <canvas id="resultCanvas"></canvas>
+        <button class="btn" onclick="download()">💾 Сохранить изображение</button>
+        <button class="btn" style="background:#ccc" onclick="location.reload()">Заново</button>
+    </div>
+</div>
+
+<script>
+    let finalWord = '';
+    const srcPath = 'src/image.png'; 
+
+    function nextScreen(n) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(`screen-${n}`).classList.add('active');
+        if(n === 3) {
+            document.getElementById('target-word').innerText = `"${finalWord}"`;
+        }
+    }
+
+    function selectPreset(w, b) {
+        finalWord = w;
+        document.getElementById('custom-word-input').value = ''; // Очищаем кастомное поле
+        document.querySelectorAll('.word-btn').forEach(btn => btn.classList.remove('selected'));
+        b.classList.add('selected');
+        document.getElementById('btn-next').style.display = 'block';
+    }
+
+    function checkCustomInput() {
+        const val = document.getElementById('custom-word-input').value.trim();
+        if (val.length > 0) {
+            finalWord = val;
+            document.querySelectorAll('.word-btn').forEach(btn => btn.classList.remove('selected'));
+            document.getElementById('btn-next').style.display = 'block';
+        } else {
+            document.getElementById('btn-next').style.display = 'none';
+        }
+    }
+
+    function generate() {
+        if (!document.getElementById('word-count').value) return alert("Введите число!");
+        nextScreen(4);
+        setTimeout(draw, 1500);
+    }
+
+    function draw() {
+        const canvas = document.getElementById('resultCanvas');
+        const ctx = canvas.getContext('2d');
+        const count = document.getElementById('word-count').value;
+        const img = new Image();
+
+        img.src = srcPath;
+        img.onload = function() {
+            canvas.width = 800;
+            canvas.height = 800;
+
+            ctx.drawImage(img, 0, 0, 800, 800);
+
+            // Белая подложка
+            ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+            ctx.fillRect(0, 660, 800, 140);
+
+            const fontSize = 32;
+            const fontFamily = "'Comic Sans MS', 'Comic Sans', cursive";
+            ctx.font = `${fontSize}px ${fontFamily}`;
+            
+            // Первая строка
+            ctx.fillStyle = "#333";
+            ctx.textAlign = "center";
+            ctx.fillText("... когда за все время вы сказали друг другу", 400, 715);
+
+            // Вторая строка (с выделением)
+            const textPart = `${finalWord} ${count} раз`;
+            ctx.fillStyle = "#ff4d6d";
+            ctx.fillText(textPart, 400, 765);
+
+            canvas.style.display = "block";
+            nextScreen(5);
+        };
+        img.onerror = () => {
+            alert("Файл src/image.png не найден в папке проекта!");
+            nextScreen(3);
+        };
+    }
+
+    function download() {
+        const canvas = document.getElementById('resultCanvas');
+        const link = document.createElement('a');
+        link.download = `love-stat.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+    }
+</script>
+
+</body>
+</html>
