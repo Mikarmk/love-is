@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Статистика чувств</title>
+    <link href="https://fonts.googleapis.com/css2?family=Neucha&display=swap" rel="stylesheet">
+    
     <style>
         body {
             margin: 0;
-            font-family: "Comic Sans MS", "Comic Sans", cursive;
+            /* Обновляем шрифт здесь */
+            font-family: 'Neucha', cursive; 
             background-color: #fff0f3;
             display: flex;
             justify-content: center;
@@ -25,6 +28,13 @@
             text-align: center;
         }
 
+        /* ... остальные стили оставляем без изменений ... */
+        /* Но убедись, что везде в кнопках и инпутах стоит font-family: inherit; */
+        
+        .btn, input, .word-btn {
+            font-family: inherit;
+        }
+
         .screen { display: none; }
         .screen.active { display: block; }
 
@@ -37,8 +47,7 @@
             cursor: pointer;
             width: 100%;
             margin-top: 15px;
-            font-family: inherit;
-            font-size: 1rem;
+            font-size: 1.2rem;
         }
 
         .word-grid {
@@ -54,23 +63,11 @@
             border-radius: 12px;
             background: none;
             cursor: pointer;
-            font-family: inherit;
             color: #ff4d6d;
+            font-size: 1.1rem;
         }
 
         .word-btn.selected { background: #ff4d6d; color: white; }
-
-        .instruction-box {
-            background: #f9f9f9;
-            border-radius: 12px;
-            padding: 15px;
-            text-align: left;
-            font-size: 0.85rem;
-            line-height: 1.4;
-            color: #666;
-            margin-bottom: 15px;
-            border: 1px dashed #ccc;
-        }
 
         input {
             width: 100%;
@@ -78,9 +75,8 @@
             padding: 12px;
             border: 2px solid #eee;
             border-radius: 10px;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             text-align: center;
-            font-family: inherit;
             margin-bottom: 10px;
         }
 
@@ -128,14 +124,12 @@
 
     <div id="screen-3" class="screen">
         <p style="margin-top:0">Как найти число?</p>
-        <div class="instruction-box">
-            1. Открой чат в <b>Телеге</b>.<br>
-            2. Нажми на 🔍 (Поиск).<br>
-            3. Введи слово <span id="target-word" style="color:#ff4d6d"></span>.<br>
-            4. Сверху появится количество совпадений.
-        </div>
-        <p>Введи полученное число:</p>
-        <input type="number" id="word-count" placeholder="Например: 542">
+        <p style="font-size: 0.9rem; color: #666; text-align: left; background: #f9f9f9; padding: 10px; border-radius: 10px;">
+            1. В Телеге нажми на 🔍<br>
+            2. Введи слово <span id="target-word" style="color:#ff4d6d"></span><br>
+            3. Спиши число совпадений сверху
+        </p>
+        <input type="number" id="word-count" placeholder="Введите число">
         <button class="btn" onclick="generate()">Создать открытку ✨</button>
     </div>
 
@@ -158,14 +152,12 @@
     function nextScreen(n) {
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById(`screen-${n}`).classList.add('active');
-        if(n === 3) {
-            document.getElementById('target-word').innerText = `"${finalWord}"`;
-        }
+        if(n === 3) document.getElementById('target-word').innerText = `"${finalWord}"`;
     }
 
     function selectPreset(w, b) {
         finalWord = w;
-        document.getElementById('custom-word-input').value = ''; // Очищаем кастомное поле
+        document.getElementById('custom-word-input').value = '';
         document.querySelectorAll('.word-btn').forEach(btn => btn.classList.remove('selected'));
         b.classList.add('selected');
         document.getElementById('btn-next').style.display = 'block';
@@ -185,7 +177,11 @@
     function generate() {
         if (!document.getElementById('word-count').value) return alert("Введите число!");
         nextScreen(4);
-        setTimeout(draw, 1500);
+        
+        // Маленький хак: ждем 100мс, чтобы шрифт точно подгрузился перед рисованием
+        document.fonts.load('10pt "Neucha"').then(() => {
+            setTimeout(draw, 1500);
+        });
     }
 
     function draw() {
@@ -198,32 +194,27 @@
         img.onload = function() {
             canvas.width = 800;
             canvas.height = 800;
-
             ctx.drawImage(img, 0, 0, 800, 800);
 
-            // Белая подложка
             ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
             ctx.fillRect(0, 660, 800, 140);
 
-            const fontSize = 32;
-            const fontFamily = "'Comic Sans MS', 'Comic Sans', cursive";
-            ctx.font = `${fontSize}px ${fontFamily}`;
-            
-            // Первая строка
-            ctx.fillStyle = "#333";
+            // Настройки текста для Canvas
             ctx.textAlign = "center";
+            ctx.font = "36px 'Neucha'"; // Используем Neucha здесь
+            
+            ctx.fillStyle = "#333";
             ctx.fillText("... когда за все время вы сказали друг другу", 400, 715);
 
-            // Вторая строка (с выделением)
-            const textPart = `${finalWord} ${count} раз`;
             ctx.fillStyle = "#ff4d6d";
-            ctx.fillText(textPart, 400, 765);
+            ctx.font = "42px 'Neucha'"; // Чуть крупнее для акцента
+            ctx.fillText(`${finalWord} ${count} раз`, 400, 765);
 
             canvas.style.display = "block";
             nextScreen(5);
         };
         img.onerror = () => {
-            alert("Файл src/image.png не найден в папке проекта!");
+            alert("Файл src/image.png не найден. Проверь папку проекта!");
             nextScreen(3);
         };
     }
